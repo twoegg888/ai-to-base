@@ -71,34 +71,7 @@ export function StartScreen({ onStart, onAIReportPreview, onSkinTypePreview }: S
           잠시 후 자동으로 시작됩니다...
         </motion.p>
 
-        {/* 프리뷰 버튼들 */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 2.5 }}
-          className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center"
-        >
-          {onSkinTypePreview && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                onSkinTypePreview();
-              }}
-              className="px-6 py-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full text-gray-700 text-sm font-medium hover:bg-white hover:shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
-            >
-              🎨 <span>디자인 프리뷰</span>
-            </button>
-          )}
-          
-          {onAIReportPreview && (
-            <button
-              onClick={handleTripleClick}
-              className="px-6 py-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full text-gray-700 text-sm font-medium hover:bg-white hover:shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
-            >
-              📊 <span>AI 보고서 프리뷰</span>
-            </button>
-          )}
-        </motion.div>
+
       </motion.div>
     </motion.div>
   );
