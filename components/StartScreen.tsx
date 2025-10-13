@@ -4,10 +4,9 @@ import { useEffect } from 'react';
 interface StartScreenProps {
   onStart: () => void;
   onAIReportPreview?: () => void;
-  onSkinTypePreview?: () => void;
 }
 
-export function StartScreen({ onStart, onAIReportPreview, onSkinTypePreview }: StartScreenProps) {
+export function StartScreen({ onStart, onAIReportPreview }: StartScreenProps) {
   const handleTripleClick = () => {
     if (onAIReportPreview) {
       onAIReportPreview();

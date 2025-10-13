@@ -257,7 +257,6 @@ export default function App() {
           >
             <StartScreen 
               onStart={handleStart}
-              onSkinTypePreview={() => setCurrentScreen('skinTypePreview')}
             />
           </motion.div>
         )}
@@ -355,7 +354,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={1}
               onComplete={handlePart1QuestionsComplete}
-              onBack={() => setCurrentScreen('part1')}
             />
           </motion.div>
         )}
@@ -389,7 +387,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={2}
               onComplete={handlePart2QuestionsComplete}
-              onBack={() => setCurrentScreen('part2')}
             />
           </motion.div>
         )}
@@ -423,7 +420,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={3}
               onComplete={handlePart3QuestionsComplete}
-              onBack={() => setCurrentScreen('part3')}
             />
           </motion.div>
         )}
@@ -457,7 +453,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={4}
               onComplete={handlePart4QuestionsComplete}
-              onBack={() => setCurrentScreen('part4')}
             />
           </motion.div>
         )}
@@ -491,7 +486,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={5}
               onComplete={handlePart5QuestionsComplete}
-              onBack={() => setCurrentScreen('part5')}
             />
           </motion.div>
         )}
@@ -525,7 +519,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={6}
               onComplete={handlePart6QuestionsComplete}
-              onBack={() => setCurrentScreen('part6')}
             />
           </motion.div>
         )}
@@ -559,7 +552,6 @@ export default function App() {
               userName={userInfo.name} 
               currentPart={7}
               onComplete={handlePart7QuestionsComplete}
-              onBack={() => setCurrentScreen('part7')}
             />
           </motion.div>
         )}
