@@ -17,7 +17,7 @@ import { SurveyFlow } from '../components/SurveyFlow';
 import { SurveyComplete } from '../components/SurveyComplete';
 
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { AI_Report_Figma } from '../components/AI_Report_Figma';
+import AI_Report_Figma from '../components/AI_Report_Figma';
 // Lazy load heavy components
 const SkinTypePreview = React.lazy(() => import('../components/SkinTypePreview').then(module => ({ default: module.SkinTypePreview })));
 import { Toaster } from "../components/ui/sonner";
