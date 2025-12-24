@@ -9,106 +9,53 @@ interface AIRecommendation {
   recipeTitle: string;
   ingredients: Array<{
     name: string;
-    amount: string; // 예: "94g (94%)"
+    amount: string;
     description?: string;
-    // ✅ 백엔드에서 나중에 percent를 따로 주면 여기 추가 가능:
-    // percent?: number;
   }>;
   manufacturingSteps: string[];
   summary: string;
+  precautions: string;
 }
 
-interface RecipeCardProps {
+interface AIReportFigmaProps {
   userName: string;
   skinType: string;
   aiRecommendation: AIRecommendation;
-  surveyId?: string;
   onBack: () => void;
   onShare?: () => void;
+  surveyId?: string; // 개인화된 공유를 위한 surveyId
 }
 
-export default function RecipeCard({
-  userName,
-  skinType,
-  aiRecommendation,
-  surveyId,
-  onBack,
-  onShare
-}: RecipeCardProps) {
+export function AI_Report_Figma({ 
+  userName, 
+  skinType, 
+  aiRecommendation, 
+  onBack, 
+  onShare,
+  surveyId 
+}: AIReportFigmaProps) {
   const [showIngredientModal, setShowIngredientModal] = useState(false);
 
-  // ✅ (1) 피부타입 동적 결정
+  // AI 추천 결과 기반으로 동적 피부 타입 및 디자인 결정
   const dynamicSkinType = useMemo(() => {
-    const answers = { skin_type: skinType };
-    const determined = determineSkinType(aiRecommendation, answers);
-    console.log('원래 skinType:', skinType);
-    console.log('결정된 skinType:', determined);
-    return determined;
+    return determineSkinType(aiRecommendation, { skin_type: skinType });
   }, [aiRecommendation, skinType]);
 
-  // ✅ (2) 피부타입별 디자인 선택
   const skinTypeDesign = useMemo(() => {
-    const design = getSkinTypeDesign(dynamicSkinType);
-    console.log('skinTypeDesign:', design);
-    return design;
+    return getSkinTypeDesign(dynamicSkinType);
   }, [dynamicSkinType]);
 
-  // ---------------------------
-  // ✅ 퍼센트 파싱 유틸 (예: "94g (94%)" -> 94)
-  // ---------------------------
-  const extractPercent = (amount?: string) => {
-    if (!amount) return null;
-    const m = amount.match(/\(([\d.]+)\s*%\)/);
-    return m ? Number(m[1]) : null;
-  };
-
-  // ---------------------------
-  // ✅ 아로마 2종 기본값 (프론트에서만 추가)
-  //  - 백엔드에서 이미 내려오면 중복 방지 로직이 걸림
-  //  - amount 값은 "표시용"이라, 원하면 0.2g (0.2%) 같은 형태로 조정 가능
-  // ---------------------------
-  const aromaDefaults = useMemo(() => ([
-    { name: '라벤더 아로마 오일', amount: '0.2g (0.2%)', description: '편안한 향과 진정감을 주는 아로마 오일 (소량 사용 권장)' },
-    { name: '티트리 아로마 오일', amount: '0.2g (0.2%)', description: '상쾌한 향과 피부 컨디션 케어에 쓰이는 아로마 오일 (소량 사용 권장)' },
-  ]), []);
-
-  // ---------------------------
-  // ✅ 표시용 성분 리스트: (Supabase/Claude 결과) + (없으면 라벤더/티트리 추가)
-  // ---------------------------
-  const displayIngredients = useMemo(() => {
-    const base = Array.isArray(aiRecommendation.ingredients) ? aiRecommendation.ingredients : [];
-
-    const hasLavender = base.some(i => (i?.name ?? '').includes('라벤더'));
-    const hasTeaTree = base.some(i => (i?.name ?? '').includes('티트리'));
-
-    const merged = [
-      ...base,
-      ...(hasLavender ? [] : [aromaDefaults[0]]),
-      ...(hasTeaTree ? [] : [aromaDefaults[1]]),
-    ];
-
-    // ✅ 최대 몇 개까지 보여줄지 (원하면 6으로 줄여도 됨)
-    return merged.slice(0, 8);
-  }, [aiRecommendation.ingredients, aromaDefaults]);
-
-  // ---------------------------
-  // ✅ 모달 설명용: AI가 description을 주면 우선 사용, 없으면 기본 맵으로 보완
-  // ---------------------------
-  const ingredientDescMap: Record<string, string> = useMemo(() => ({
-    '알로에 젤': '피부에 시원한 수분을 공급하고 진정 효과를 선사하는 순한 베이스',
-    '글리세린': '공기 중 수분을 끌어당겨 피부를 촉촉하게 유지해주는 보습 성분',
-    '호호바오일': '피부 장벽을 보호하며 가벼운 보습막을 형성하는 순한 오일',
-    '동백오일': '피부를 부드럽게 가꿔주는 가벼운 텍스처의 오일',
-    '어성초추출물': '피부를 맑고 깨끗하게 가꿔주는 진정 성분',
-    '병풀추출물': '예민한 피부를 편안하게 달래주는 진정 추출물',
-    '라벤더 아로마 오일': '편안한 향과 진정감을 주는 아로마 오일 (소량 사용 권장)',
-    '티트리 아로마 오일': '상쾌한 향과 피부 컨디션 케어에 쓰이는 아로마 오일 (소량 사용 권장)',
-  }), []);
+  console.log('🎨 선택된 피부 타입 디자인:', {
+    originalSkinType: skinType,
+    determinedType: dynamicSkinType,
+    designTitle: skinTypeDesign.title,
+    backgroundColor: skinTypeDesign.backgroundColor
+  });
 
   const handleShare = async () => {
     // 개인화된 공유 링크 생성 (캐시 방지를 위한 타임스탬프 포함)
     const timestamp = Date.now();
-    const personalizedShareUrl = surveyId
+    const personalizedShareUrl = surveyId 
       ? `https://${projectId}.supabase.co/functions/v1/make-server-44d07f49/share/${surveyId}?v=${timestamp}`
       : window.location.href;
 
@@ -137,15 +84,23 @@ export default function RecipeCard({
         toast.error('공유 기능을 지원하지 않는 브라우저입니다.');
       }
     }
+    if (onShare) onShare();
   };
 
   return (
     <>
-      <div className="min-h-screen bg-white">
-        {/* 헤더 */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
-          <div className="max-w-6xl mx-auto px-4 md:px-6">
-            <div className="flex items-center justify-between h-14 md:h-16">
+      <div className="min-h-screen bg-gray-50">
+        {/* 반응형 스케일링 컨테이너 */}
+        <div className="w-full flex justify-center p-2 md:p-4 lg:p-8">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white relative shadow-2xl w-full max-w-[900px]"
+          >
+            {/* 헤더 영역 - 고정 네비게이션 */}
+            <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 p-3 md:p-4 flex items-center justify-between">
               <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors text-sm md:text-base"
@@ -163,33 +118,14 @@ export default function RecipeCard({
                 </button>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* 메인 콘텐츠 */}
-        <div className="pt-14 md:pt-16">
-          <div className="max-w-6xl mx-auto">
-            {/* 상단 히어로 */}
-            <div className="px-4 md:px-6 py-8 md:py-12">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="text-center mb-8 md:mb-12"
-              >
-                <h1 className="font-['Pretendard',sans-serif] font-semibold text-black text-2xl md:text-4xl lg:text-[50px] tracking-tight mb-3 md:mb-4">
-                  {userName}님의 맞춤 레시피
-                </h1>
-                <p className="font-['Pretendard',sans-serif] font-thin text-[#b3b3b3] text-sm md:text-lg lg:text-[30px] tracking-tight">
-                  {aiRecommendation.recipeTitle}
-                </p>
-              </motion.div>
-
-              {/* 피부 타입 카드 */}
-              <div className="flex justify-center mb-10 md:mb-16">
-                <div className="w-full max-w-md">
-                  {React.createElement(skinTypeDesign.component, {
-                    userName: userName
+            {/* 메인 콘텐츠 - 반응형 Figma 디자인 */}
+            <div className="pt-16 md:pt-20 pb-8 md:pb-12 relative w-full">
+              {/* 동적 헤더 카드 - AI 분석 결과에 따라 디자인 변경 */}
+              <div className="mx-4 md:mx-[59px] mt-4 md:mt-[60px] relative">
+                <div className="w-full max-w-[min(90vw,782px)] mx-auto">
+                  {React.createElement(skinTypeDesign.component, { 
+                    userName: userName 
                   })}
                 </div>
               </div>
@@ -199,55 +135,40 @@ export default function RecipeCard({
                 <h2 className="font-['Pretendard',sans-serif] font-semibold text-black text-2xl md:text-4xl lg:text-[50px] text-center mb-6 md:mb-8 tracking-tight">
                   {userName}님 맞춤 레시피
                 </h2>
-
-                {/* ✅ 성분 그리드 - 동적 렌더링 + 퍼센트 바 */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mx-4 md:mx-[59px] mb-4 md:mb-6">
-                  {displayIngredients.map((ingredient, index) => {
-                    // 나중에 백엔드에서 percent를 따로 주면 여기에서 우선순위로 사용 가능:
-                    // const percent = typeof ingredient.percent === 'number' ? ingredient.percent : extractPercent(ingredient.amount);
-                    const percent = extractPercent(ingredient.amount);
-
-                    return (
-                      <motion.div
-                        key={`${ingredient.name}-${index}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
-                        className="bg-neutral-100 rounded-lg md:rounded-[24px] p-4 md:p-8 text-center hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => setShowIngredientModal(true)}
-                      >
-                        <h3 className="font-['Pretendard',sans-serif] font-semibold text-[#102a71] text-lg md:text-2xl lg:text-[35px] mb-2 md:mb-4 tracking-tight">
-                          {ingredient.name}
-                        </h3>
-
-                        <p className="font-['Pretendard',sans-serif] font-thin text-[#102a71] text-2xl md:text-4xl lg:text-[60px] tracking-tight">
-                          {ingredient.amount}
-                        </p>
-
-                        {/* ✅ 반응형 퍼센트 표시 */}
-                        {typeof percent === 'number' && (
-                          <div className="mt-3 md:mt-4">
-                            <div className="h-2 md:h-3 bg-white/60 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-[#102a71] rounded-full transition-all"
-                                style={{ width: `${Math.min(Math.max(percent, 0), 100)}%` }}
-                              />
-                            </div>
-                            <div className="mt-1 text-xs md:text-sm text-[#102a71]/70">
-                              {percent}%
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
+                
+                {/* 성분 그리드 - 반응형 */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mx-4 md:mx-[59px] mb-4 md:mb-6">
+                  {[
+                    { name: aiRecommendation.ingredients[0]?.name || '병풀 추출물', amount: aiRecommendation.ingredients[0]?.amount || '5g' },
+                    { name: aiRecommendation.ingredients[1]?.name || '동백오일', amount: aiRecommendation.ingredients[1]?.amount || '5g' },
+                    { name: aiRecommendation.ingredients[2]?.name || '동백오일', amount: aiRecommendation.ingredients[2]?.amount || '5g' },
+                    { name: aiRecommendation.ingredients[3]?.name || '동백오일', amount: aiRecommendation.ingredients[3]?.amount || '5g' },
+                    { name: aiRecommendation.ingredients[4]?.name || '알로에 젤', amount: aiRecommendation.ingredients[4]?.amount || '5g' },
+                    { name: aiRecommendation.ingredients[5]?.name || '올리브리퀴드', amount: aiRecommendation.ingredients[5]?.amount || '5g' },
+                  ].map((ingredient, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
+                      className="bg-neutral-100 rounded-lg md:rounded-[24px] p-4 md:p-8 text-center hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => setShowIngredientModal(true)}
+                    >
+                      <h3 className="font-['Pretendard',sans-serif] font-semibold text-[#102a71] text-lg md:text-2xl lg:text-[35px] mb-2 md:mb-4 tracking-tight">
+                        {ingredient.name}
+                      </h3>
+                      <p className="font-['Pretendard',sans-serif] font-thin text-[#102a71] text-2xl md:text-4xl lg:text-[60px] tracking-tight">
+                        {ingredient.amount}
+                      </p>
+                    </motion.div>
+                  ))}
                 </div>
 
                 {/* 원료 설명 더보기 버튼 */}
                 <div className="text-center">
                   <button
                     onClick={() => setShowIngredientModal(true)}
-                    className="font-['Pretendard',sans-serif] font-thin text-[#b3b3b3] text-sm md:text-base lg:text-[30px] hover:text-[#102a71] transition-colors tracking-tight"
+                    className="font-['Pretendard',sans-serif] font-semibold text-[#666666] text-base md:text-xl lg:text-[30px] hover:text-[#102a71] transition-colors tracking-tight"
                   >
                     *원료 설명 더보기
                   </button>
@@ -259,7 +180,7 @@ export default function RecipeCard({
                 <h2 className="font-['Pretendard',sans-serif] font-semibold text-black text-2xl md:text-4xl lg:text-[50px] text-center mb-6 md:mb-8 tracking-tight">
                   제조방법
                 </h2>
-
+                
                 <div className="space-y-4 md:space-y-6 mx-4 md:mx-[60px]">
                   {aiRecommendation.manufacturingSteps.slice(0, 3).map((step, index) => (
                     <motion.div
@@ -270,14 +191,14 @@ export default function RecipeCard({
                       className="bg-neutral-100 rounded-lg md:rounded-[24px] p-4 md:p-8"
                     >
                       <div className="flex items-start gap-3 md:gap-6">
-                        <div className="bg-[#102a71] text-white rounded-full w-7 h-7 md:w-12 md:h-12 flex items-center justify-center font-semibold text-sm md:text-xl lg:text-[40px] flex-shrink-0">
+                        <div className="bg-[#102a71] text-white rounded-full w-10 h-10 md:w-16 md:h-16 flex items-center justify-center font-semibold text-sm md:text-xl lg:text-[40px] flex-shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-['Pretendard',sans-serif] font-semibold text-black text-lg md:text-2xl lg:text-[40px] mb-2 md:mb-4 tracking-tight">
+                          <h3 className="font-['Pretendard',sans-serif] font-semibold text-[#102a71] text-lg md:text-2xl lg:text-[40px] mb-2 md:mb-4 tracking-tight">
                             {index + 1}단계
                           </h3>
-                          <p className="font-['Pretendard',sans-serif] font-thin text-black text-sm md:text-lg lg:text-[30px] leading-relaxed tracking-tight">
+                          <p className="font-['Pretendard',sans-serif] font-semibold text-[#4f3d93] text-sm md:text-lg lg:text-[32px] leading-relaxed tracking-tight">
                             {step}
                           </p>
                         </div>
@@ -292,41 +213,46 @@ export default function RecipeCard({
                 <h2 className="font-['Pretendard',sans-serif] font-semibold text-black text-2xl md:text-4xl lg:text-[50px] text-center mb-6 md:mb-8 tracking-tight">
                   총평
                 </h2>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.6, duration: 0.4 }}
-                  className="bg-neutral-100 rounded-lg md:rounded-[24px] p-4 md:p-8 mx-4 md:mx-[60px]"
-                >
-                  <p className="font-['Pretendard',sans-serif] font-thin text-black text-sm md:text-lg lg:text-[30px] leading-relaxed tracking-tight text-center">
+                
+                <div className="bg-neutral-100 rounded-lg md:rounded-[24px] p-4 md:p-8 mx-4 md:mx-[60px]">
+                  <p className="font-['Pretendard',sans-serif] font-semibold text-[#4f3d93] text-sm md:text-lg lg:text-[32px] leading-relaxed tracking-tight whitespace-pre-line">
                     {aiRecommendation.summary}
                   </p>
-                </motion.div>
+                </div>
               </div>
 
-              {/* 주의사항 및 보관 안내 */}
-              <div className="pb-12 md:pb-20">
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.8, duration: 0.4 }}
-                  className="text-center space-y-3 md:space-y-4"
-                >
-                  <p className="font-['Pretendard',sans-serif] font-thin text-[#b3b3b3] text-xs md:text-sm lg:text-[30px] tracking-tight">
-                    *본 레시피는 개인 맞춤형 추천이며, 피부 자극이 있을 경우 사용을 중단해주세요.
-                  </p>
-                  <p className="font-['Pretendard',sans-serif] font-thin text-[#b3b3b3] text-xs md:text-sm lg:text-[30px] tracking-tight">
-                    *제조 후 1년 이내 사용을 권장하며, 직사광선을 피해 보관해주세요.
-                  </p>
-                </motion.div>
+              {/* 주의사항 섹션 */}
+              <div className="mb-12 md:mb-16">
+                <h2 className="font-['Pretendard',sans-serif] font-semibold text-black text-2xl md:text-4xl lg:text-[50px] text-center mb-6 md:mb-8 tracking-tight">
+                  주의사항 및 보관안내
+                </h2>
+                
+                <div className="bg-neutral-100 rounded-lg md:rounded-[24px] p-4 md:p-8 mx-4 md:mx-[60px]">
+                  <div className="font-['Pretendard',sans-serif] text-[#4f3d93] text-sm md:text-lg lg:text-[32px] leading-relaxed tracking-tight space-y-2 md:space-y-4">
+                    <p>
+                      화장품 사용 시 또는 사용 후 직사광선에 의하여 사용부위가 붉은 반점, 부어오름 또는 가려움증 등의 이상 증상이나 부작용이 있는 경우 전문의 등과 상담할 것 상처가 있는 부위 등에는 사용을 자제할 것
+                    </p>
+                    
+                    <div>
+                      <p className="font-semibold mb-1 md:mb-2">보관 및 취급 시의 주의사항</p>
+                      <p>가) 어린이의 손이 닿지 않는 곳에 보관할 것</p>
+                      <p>나) 직사광선을 피해서 보관할 것</p>
+                    </div>
+                    
+                    {aiRecommendation.precautions && (
+                      <p className="border-t pt-2 md:pt-4 mt-2 md:mt-4">
+                        {aiRecommendation.precautions}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* ✅ 성분 상세보기 모달 - displayIngredients 기반 */}
+      {/* 성분 상세보기 모달 - 반응형 */}
       <AnimatePresence>
         {showIngredientModal && (
           <motion.div
@@ -356,25 +282,27 @@ export default function RecipeCard({
                 </button>
               </div>
 
-              {/* ✅ 성분 리스트 (동적) */}
+              {/* 성분 리스트 */}
               <div className="space-y-4 md:space-y-6 mb-6">
-                {displayIngredients.map((ingredient, index) => {
-                  const desc =
-                    ingredient.description ||
-                    ingredientDescMap[ingredient.name] ||
-                    '해당 원료에 대한 설명이 준비 중입니다.';
-
-                  return (
-                    <div key={`${ingredient.name}-${index}`} className="border-b border-gray-100 last:border-0 pb-3 md:pb-4 last:pb-0">
-                      <h4 className="font-['Pretendard',sans-serif] font-semibold text-black text-base md:text-lg lg:text-[30px] mb-1 md:mb-2 tracking-tight">
-                        {ingredient.name}
-                      </h4>
-                      <p className="font-['Pretendard',sans-serif] text-gray-600 text-sm md:text-base lg:text-lg leading-relaxed">
-                        {desc}
-                      </p>
-                    </div>
-                  );
-                })}
+                {[
+                  { name: '알로에 젤', description: '피부에 시원한 수분을 공급하고 진정 효과를 선사하는 순한 베이스' },
+                  { name: '글리세린', description: '공기 중 수분을 끌어당겨 피부를 촉촉하게 유지해주는 보습 성분' },
+                  { name: '호호바오일', description: '피부 장벽을 보호하며 가벼운 보습막을 형성하는 순한 오일' },
+                  { name: '동백오일', description: '피부를 부드럽게 가꿔주는 가벼운 텍스처의 오일' },
+                  { name: '어성초추출물', description: '피부를 맑고 깨끗하게 가꿔주는 진정 성분' },
+                  { name: '병풀추출물', description: '예민한 피부를 편안하게 달래주는 진정 추출물' },
+                  { name: '티트리 아로마 오일', description: '피부를 청결하게 가꾸고 진정 효과를 주는 천연 에센셜 오일' },
+                  { name: '라벤더 아로마 오일', description: '피부를 편안하게 진정시키고 릴렉싱 효과를 선사하는 아로마 오일' }
+                ].map((ingredient, index) => (
+                  <div key={index} className="border-b border-gray-100 last:border-0 pb-3 md:pb-4 last:pb-0">
+                    <h4 className="font-['Pretendard',sans-serif] font-semibold text-black text-base md:text-lg lg:text-[30px] mb-1 md:mb-2 tracking-tight">
+                      {ingredient.name}
+                    </h4>
+                    <p className="font-['Pretendard',sans-serif] font-normal text-gray-600 text-sm md:text-base lg:text-lg leading-relaxed">
+                      {ingredient.description}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               {/* 모달 푸터 */}
@@ -384,7 +312,7 @@ export default function RecipeCard({
                 </p>
                 <button
                   onClick={() => setShowIngredientModal(false)}
-                  className="bg-[#102a71] hover:bg-[#102a71]/90 text-white px-6 py-3 md:px-8 md:py-4 rounded-lg md:rounded-[24px] font-['Pretendard',sans-serif] font-semibold text-sm md:text-base lg:text-[30px] tracking-tight transition-colors"
+                  className="bg-[#102a71] hover:bg-[#102a71]/90 text-white px-6 md:px-8 py-2 md:py-3 rounded-lg md:rounded-[16px] font-['Pretendard',sans-serif] font-semibold text-sm md:text-base lg:text-[30px] tracking-tight transition-colors"
                 >
                   뒤로가기
                 </button>
