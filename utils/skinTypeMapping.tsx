@@ -97,6 +97,58 @@ export function analyzeSkinTypeFromAI(aiRecommendation: any): string {
     return 'hydration';
   }
 
+  // ✅ 1순위: Claude 응답 텍스트에서 "0. 피부 타입 카드" 파싱
+  if (typeof aiRecommendation === 'string') {
+    // Claude 응답이 통째로 텍스트로 저장된 경우
+    const cardMatch = aiRecommendation.match(/0\.\s*피부\s*타입\s*카드[:\s]*\*?\s*([^\n]+)/);
+    if (cardMatch && cardMatch[1]) {
+      const cardName = cardMatch[1].trim();
+      const cardMapping: Record<string, string> = {
+        '탄력 메이커': 'elasticity',
+        '보송보송': 'oily',
+        '진정진정': 'acne',
+        '민감 케어': 'sensitive',
+        '피부 톤 케어': 'brightening',
+        '굳건한 보호장벽': 'barrier',
+        '보습': 'hydration',
+        '산뜻 보습': 'light_hydration',
+        '보습보습': 'intensive_hydration'
+      };
+
+      if (cardMapping[cardName]) {
+        console.log(`✅ Claude 응답 파싱: "${cardName}" → ${cardMapping[cardName]}`);
+        return cardMapping[cardName];
+      }
+    }
+  }
+
+  // ✅ 2순위: JSON 객체에 skinTypeCard 필드가 있는 경우
+  if (aiRecommendation.skinTypeCard) {
+    const cardName = aiRecommendation.skinTypeCard.trim();
+    
+    const cardMapping: Record<string, string> = {
+      '탄력 메이커': 'elasticity',
+      '보송보송': 'oily',
+      '진정진정': 'acne',
+      '민감 케어': 'sensitive',
+      '피부 톤 케어': 'brightening',
+      '굳건한 보호장벽': 'barrier',
+      '보습': 'hydration',
+      '산뜻 보습': 'light_hydration',
+      '보습보습': 'intensive_hydration'
+    };
+
+    if (cardMapping[cardName]) {
+      console.log(`✅ Claude 지정 카드: "${cardName}" → ${cardMapping[cardName]}`);
+      return cardMapping[cardName];
+    } else {
+      console.warn(`⚠️ 알 수 없는 카드명: "${cardName}", 키워드 분석으로 fallback`);
+    }
+  }
+
+  // ✅ 3순위: 기존 키워드 분석 로직 (fallback)
+  console.log('🔍 skinTypeCard 필드 없음, 키워드 분석 시작...');
+  
   // 1. recipeTitle에서 키워드 분석
   const title = aiRecommendation.recipeTitle?.toLowerCase() || '';
   
